@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISA 認證攀樹師 — 筆試練習總覽</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #07070f;
+    --surface: #0d0d1a;
+    --surface2: #111120;
+    --border: #1a1a30;
+    --text: #ddddf0;
+    --muted: #555568;
+    --w1: #4ecca3;
+    --w2: #a78bfa;
+    --w3: #f5a623;
+    --w4: #e94560;
+    --w5: #34d399;
+    --locked: #2a2a3e;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Serif TC', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(ellipse 70% 50% at 15% 15%, rgba(78,204,163,0.05) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 40% at 85% 80%, rgba(167,139,250,0.05) 0%, transparent 55%);
+    pointer-events: none; z-index: 0;
+  }
+
+  #app { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 0 20px 64px; }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 56px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+    animation: fadeDown 0.7s ease both;
+  }
+  .isa-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(78,204,163,0.1); border: 1px solid var(--w1);
+    padding: 5px 14px; border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--w1); letter-spacing: 0.12em;
+    margin-bottom: 22px;
+  }
+  .isa-badge::before { content: '🌿'; font-size: 14px; }
+  h1 {
+    font-size: clamp(28px, 6vw, 42px);
+    font-weight: 900; line-height: 1.15;
+    letter-spacing: -0.5px;
+  }
+  h1 em { font-style: normal; color: var(--w1); }
+  .hero-sub {
+    margin-top: 14px;
+    font-size: 17px; color: #9090aa; line-height: 1.75;
+  }
+
+  /* ── Exam info bar ── */
+  .info-bar {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-top: 28px;
+  }
+  .info-chip {
+    padding: 6px 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .info-chip span { color: var(--text); }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 18px;
+  }
+
+  /* ── Quiz cards ── */
+  .quiz-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 48px; }
+
+  .quiz-card {
+    display: flex; align-items: stretch;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    animation: fadeUp 0.5s ease both;
+  }
+  .quiz-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+
+  .quiz-card.locked {
+    opacity: 0.45; pointer-events: none; cursor: default;
+    filter: grayscale(0.5);
+  }
+  .quiz-card.locked:hover { transform: none; box-shadow: none; }
+
+  .card-accent {
+    width: 6px; flex-shrink: 0;
+  }
+
+  .card-body {
+    flex: 1; padding: 20px 22px;
+    display: flex; align-items: center; gap: 18px;
+  }
+
+  .card-week {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--muted);
+    white-space: nowrap; flex-shrink: 0;
+    line-height: 1;
+  }
+  .card-week-num {
+    font-size: 28px; font-weight: 700;
+    display: block; line-height: 1; margin-bottom: 2px;
+  }
+
+  .card-divider { width: 1px; background: var(--border); align-self: stretch; margin: 4px 0; flex-shrink: 0; }
+
+  .card-info { flex: 1; }
+  .card-title { font-size: 18px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+  .card-meta { font-size: 14px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  .card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .card-tag {
+    font-size: 12px; padding: 3px 9px;
+    border-radius: 4px; font-family: 'JetBrains Mono', monospace;
+    border: 1px solid; opacity: 0.85;
+  }
+
+  .card-arrow {
+    font-size: 20px; color: var(--muted);
+    padding-right: 4px; flex-shrink: 0;
+    transition: color 0.2s;
+  }
+  .quiz-card:hover .card-arrow { color: var(--text); }
+
+  .lock-icon { font-size: 18px; padding-right: 4px; flex-shrink: 0; }
+
+  /* ── Coverage bar ── */
+  .coverage {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 26px; margin-bottom: 40px;
+  }
+  .coverage-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .cov-row { margin-bottom: 12px; }
+  .cov-header { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+  .cov-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .cov-fill { height: 100%; border-radius: 3px; }
+
+  /* ── Tips ── */
+  .tips { background: var(--surface2); border-radius: 12px; padding: 24px 26px; margin-bottom: 40px; }
+  .tips-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+  .tip { display: flex; gap: 12px; margin-bottom: 12px; font-size: 15px; line-height: 1.7; color: #a0a0b8; }
+  .tip-icon { flex-shrink: 0; font-size: 16px; margin-top: 2px; }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border); padding-top: 24px;
+    text-align: center; font-size: 13px; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace; line-height: 2;
+  }
+  footer a { color: var(--w1); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-14px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(12px);  } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="isa-badge">ISA Certified Tree Climber · 第十五屆</div>
+    <h1>筆試練習<em>題庫</em></h1>
+    <p class="hero-sub">每週三晚上八點，一套 25 題，從這裡開始練習。<br>通過標準 70%，距離考試一步一步來。</p>
+    <div class="info-bar">
+      <div class="info-chip">筆試 <span>2026 / 06 / 27</span></div>
+      <div class="info-chip">每週更新 <span>週三晚八點</span></div>
+      <div class="info-chip">每套 <span>25 題</span></div>
+      <div class="info-chip">通過門檻 <span>70%</span></div>
+    </div>
+  </div>
+
+  <!-- Quiz list -->
+  <div class="section-label">練習題庫 — 按順序作答</div>
+  <div class="quiz-list" id="quiz-list"></div>
+
+  <!-- Coverage -->
+  <div class="section-label">五大考試類別配分</div>
+  <div class="coverage">
+    <div id="cov-bars"></div>
+  </div>
+
+  <!-- Tips -->
+  <div class="tips">
+    <div class="tips-title">📋 使用建議</div>
+    <div class="tip"><span class="tip-icon">🗓</span>每週三晚八點做當週新題，不要提前刷；讓自己有時間複習上週錯題。</div>
+    <div class="tip"><span class="tip-icon">📖</span>每題做完都要讀解析，答對的也要讀——考試考的是「為什麼」。</div>
+    <div class="tip"><span class="tip-icon">⚠️</span>正確率低於 70% 的類別，當週優先複習《攀樹指南》對應章節。</div>
+    <div class="tip"><span class="tip-icon">🔁</span>每套題都可重複練習，建議第一次做完後隔幾天再做一次，確認記憶鞏固。</div>
+    <div class="tip"><span class="tip-icon">🌲</span>術科繩結每天練，學科每週三測驗，兩條線並行準備。</div>
+  </div>
+
+  <footer>
+    <div>ISA 認證攀樹師筆試練習題庫</div>
+    <div><a href="https://github.com/ismeterry-chiang/ISA-quiz" target="_blank">github.com/ismeterry-chiang/ISA-quiz</a></div>
+    <div style="margin-top:4px">依據 ISA Program Guide · ANSI A300 · ANSI Z133</div>
+  </footer>
+</div>
+
+<script>
+const WEEKS = [
+  {
+    week: 1,
+    date: "2026/05/06",
+    title: "第一週練習題",
+    subtitle: "基礎概念全面掃描",
+    file: "index.html",
+    color: "#4ecca3",
+    available: true,
+    tags: ["安全 26%", "樹木移除 22%", "攀爬與索具 22%", "修剪 20%", "樹木健康 10%"],
+    tagColors: ["#e94560", "#f5a623", "#4ecca3", "#a78bfa", "#34d399"],
+  },
+  {
+    week: 2,
+    date: "2026/05/13",
+    title: "第二週練習題",
+    subtitle: "深入原理與標準規範",
+    file: "week02.html",
+    color: "#a78bfa",
+    available: true,
+    tags: ["安全 26%", "樹木移除 22%", "攀爬與索具 22%", "修剪 20%", "樹木健康 10%"],
+    tagColors: ["#e94560", "#f5a623", "#4ecca3", "#a78bfa", "#34d399"],
+  },
+  {
+    week: 3,
+    date: "2026/05/20",
+    title: "第三週練習題",
+    subtitle: "即將開放",
+    file: null,
+    color: "#f5a623",
+    available: false,
+    tags: [],
+    tagColors: [],
+  },
+  {
+    week: 4,
+    date: "2026/05/27",
+    title: "第四週練習題",
+    subtitle: "即將開放",
+    file: null,
+    color: "#e94560",
+    available: false,
+    tags: [],
+    tagColors: [],
+  },
+  {
+    week: 5,
+    date: "2026/06/03",
+    title: "第五週練習題",
+    subtitle: "即將開放",
+    file: null,
+    color: "#34d399",
+    available: false,
+    tags: [],
+    tagColors: [],
+  },
+  {
+    week: 6,
+    date: "2026/06/10",
+    title: "第六週練習題",
+    subtitle: "即將開放",
+    file: null,
+    color: "#4ecca3",
+    available: false,
+    tags: [],
+    tagColors: [],
+  },
+  {
+    week: 7,
+    date: "2026/06/17",
+    title: "第七週衝刺題",
+    subtitle: "即將開放",
+    file: null,
+    color: "#a78bfa",
+    available: false,
+    tags: [],
+    tagColors: [],
+  },
+];
+
+const COVERAGE = [
+  { label: "安全 Safety",            pct: 26, color: "#e94560" },
+  { label: "樹木移除 Tree Removal",  pct: 22, color: "#f5a623" },
+  { label: "攀爬與索具 Climbing",    pct: 22, color: "#4ecca3" },
+  { label: "修剪 Pruning",           pct: 20, color: "#a78bfa" },
+  { label: "樹木健康與辨識 Health",  pct: 10, color: "#34d399" },
+];
+
+// Build quiz cards
+const list = document.getElementById("quiz-list");
+WEEKS.forEach((w, i) => {
+  const el = document.createElement(w.available ? "a" : "div");
+  if (w.available) el.href = w.file;
+  el.className = "quiz-card" + (w.available ? "" : " locked");
+  el.style.animationDelay = (i * 0.07) + "s";
+
+  if (w.available) {
+    el.addEventListener("mouseenter", () => {
+      el.style.borderColor = w.color;
+    });
+    el.addEventListener("mouseleave", () => {
+      el.style.borderColor = "";
+    });
+  }
+
+  const tagHTML = w.tags.map((t, ti) =>
+    `<span class="card-tag" style="color:${w.tagColors[ti]};border-color:${w.tagColors[ti]}">${t}</span>`
+  ).join("");
+
+  el.innerHTML = `
+    <div class="card-accent" style="background:${w.color}"></div>
+    <div class="card-body">
+      <div class="card-week" style="color:${w.available ? w.color : 'var(--muted)'}">
+        <span class="card-week-num">W${String(w.week).padStart(2,'0')}</span>
+        ${w.date}
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-info">
+        <div class="card-title">${w.title}</div>
+        <div class="card-meta">${w.subtitle}</div>
+        ${tagHTML ? `<div class="card-tags">${tagHTML}</div>` : ""}
+      </div>
+      ${w.available
+        ? `<div class="card-arrow">→</div>`
+        : `<div class="lock-icon">🔒</div>`
+      }
+    </div>`;
+
+  list.appendChild(el);
+});
+
+// Build coverage bars
+const covEl = document.getElementById("cov-bars");
+COVERAGE.forEach(c => {
+  covEl.innerHTML += `
+    <div class="cov-row">
+      <div class="cov-header">
+        <span style="color:${c.color}">${c.label}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:14px">${c.pct}%</span>
+      </div>
+      <div class="cov-bar">
+        <div class="cov-fill" style="width:${c.pct}%;background:${c.color}"></div>
+      </div>
+    </div>`;
+});
+</script>
+</body>
+</html>
