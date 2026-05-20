@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISA 認證攀樹師 — 第三週練習題</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #07070f;
+    --surface: #0d0d1a;
+    --surface2: #111120;
+    --border: #1a1a30;
+    --text: #ddddf0;
+    --muted: #555568;
+    --correct: #4ecca3;
+    --wrong: #e94560;
+    --accent: #f5a623;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Serif TC', serif; min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% 20%, rgba(245,166,35,0.05) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 40% at 90% 80%, rgba(78,204,163,0.04) 0%, transparent 55%);
+    pointer-events: none; z-index: 0;
+  }
+  #app { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
+
+  /* ── Back nav ── */
+  .back-nav { padding: 14px 0 0; margin-bottom: -8px; animation: fadeDown 0.4s ease both; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--muted);
+    text-decoration: none; padding: 7px 14px; border: 1px solid var(--border);
+    border-radius: 20px; background: var(--surface); transition: color 0.15s, border-color 0.15s;
+  }
+  .back-link:hover { color: var(--text); border-color: var(--accent); }
+
+  /* ── Header ── */
+  header { padding: 28px 0 22px; border-bottom: 1px solid var(--border); margin-bottom: 22px; animation: fadeDown 0.6s ease both; }
+  .header-inner { display: flex; justify-content: space-between; align-items: flex-end; }
+  .brand { font-size: 13px; letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-bottom: 6px; }
+  .title { font-size: clamp(20px, 4vw, 28px); font-weight: 900; line-height: 1.2; }
+  .title span { color: var(--accent); }
+  .week-badge { display: inline-block; background: rgba(245,166,35,0.12); border: 1px solid var(--accent); color: var(--accent); font-size: 13px; padding: 3px 10px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; margin-top: 6px; }
+  .score-box { text-align: right; }
+  .score-num { font-family: 'JetBrains Mono', monospace; font-size: 28px; color: var(--accent); font-weight: 700; line-height: 1; }
+  .score-num .denom { color: var(--muted); font-weight: 400; }
+  .score-label { font-size: 13px; color: var(--muted); margin-top: 4px; letter-spacing: 0.1em; font-family: 'JetBrains Mono', monospace; }
+
+  .progress-track { height: 3px; background: var(--border); margin-bottom: 20px; border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.5s cubic-bezier(.4,0,.2,1); }
+
+  .filter-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 28px; scrollbar-width: none; }
+  .filter-scroll::-webkit-scrollbar { display: none; }
+  .cat-btn { padding: 7px 14px; border-radius: 20px; font-size: 14px; font-family: 'JetBrains Mono', monospace; cursor: pointer; white-space: nowrap; border: 1px solid var(--muted); background: transparent; color: var(--muted); transition: all 0.2s; letter-spacing: 0.05em; }
+
+  .question-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .cat-tag { padding: 4px 12px; border-radius: 4px; font-size: 13px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; border: 1px solid currentColor; }
+  .q-counter { font-size: 15px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .question-text { font-size: clamp(18px, 3.5vw, 22px); line-height: 1.8; margin-bottom: 24px; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option-btn {
+    padding: 14px 18px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; color: #9090a8; text-align: left; font-size: 17px;
+    line-height: 1.65; cursor: pointer; font-family: 'Noto Serif TC', serif;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .option-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+  .option-btn:disabled { cursor: default; }
+  .option-btn.correct { border-color: var(--correct); background: rgba(78,204,163,0.08); color: var(--correct); }
+  .option-btn.wrong   { border-color: var(--wrong);   background: rgba(233,69,96,0.08);   color: var(--wrong); }
+  .option-btn.dimmed  { color: var(--muted); border-color: var(--border); }
+  .option-icon { font-family: 'JetBrains Mono', monospace; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+
+  .explanation { margin-top: 22px; background: var(--surface2); border-radius: 8px; padding: 18px 20px; border-left: 3px solid var(--correct); animation: fadeUp 0.35s ease both; }
+  .explanation.wrong-exp { border-left-color: var(--wrong); }
+  .exp-label { font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
+  .exp-text { font-size: 16px; line-height: 1.9; color: #b0b0c8; }
+
+  .next-btn { margin-top: 20px; width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: 700; font-family: 'Noto Serif TC', serif; cursor: pointer; letter-spacing: 0.08em; transition: opacity 0.2s, transform 0.15s; animation: fadeUp 0.35s 0.1s ease both; }
+  .next-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  #results { display: none; animation: fadeUp 0.5s ease both; }
+  .result-score-big { text-align: center; padding: 48px 0 32px; }
+  .result-pct { font-family: 'JetBrains Mono', monospace; font-size: clamp(64px,15vw,96px); font-weight: 700; line-height: 1; letter-spacing: -2px; }
+  .result-verdict { font-size: 16px; letter-spacing: 0.25em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-top: 12px; }
+  .result-sub { color: var(--muted); font-size: 15px; margin-top: 8px; }
+
+  .section-label { font-size: 13px; color: var(--muted); margin-bottom: 14px; letter-spacing: 0.15em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+  .cat-score-row { margin-bottom: 14px; }
+  .cat-score-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 15px; }
+  .cat-score-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .cat-score-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+
+  .advice-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; margin-bottom: 24px; font-size: 15px; line-height: 1.8; }
+  .advice-title { color: var(--text); font-size: 16px; margin-bottom: 10px; }
+
+  .result-actions { display: flex; flex-direction: column; gap: 10px; }
+  .restart-btn { padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: 700; font-family: 'Noto Serif TC', serif; cursor: pointer; background: var(--accent); color: #07070f; transition: opacity 0.2s; }
+  .restart-btn:hover { opacity: 0.88; }
+  .cat-btns-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .cat-retry-btn { padding: 11px 8px; background: var(--surface); border-radius: 6px; font-size: 15px; cursor: pointer; font-family: 'Noto Serif TC', serif; border: 1px solid; transition: opacity 0.2s; }
+  .cat-retry-btn:hover { opacity: 0.75; }
+
+  footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; font-size: 13px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; line-height: 2; }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  .question-card { animation: fadeUp 0.3s ease both; }
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(10px);  } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="back-nav">
+    <a href="index.html" class="back-link">← 返回首頁</a>
+  </div>
+
+  <header>
+    <div class="header-inner">
+      <div>
+        <div class="brand">ISA Certified Tree Climber · 第十五屆</div>
+        <div class="title">筆試<span>練習題庫</span></div>
+        <div class="week-badge">第三週 · Week 03</div>
+      </div>
+      <div class="score-box">
+        <div class="score-num"><span id="score-correct">0</span><span class="denom">/<span id="score-total">0</span></span></div>
+        <div class="score-label">正確率 <span id="score-pct">—</span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="filter-scroll" id="filter-row"></div>
+
+  <div id="quiz">
+    <div class="question-card" id="question-card">
+      <div class="question-meta">
+        <span class="cat-tag" id="cat-tag"></span>
+        <span class="q-counter" id="q-counter"></span>
+      </div>
+      <div class="question-text" id="question-text"></div>
+      <div class="options" id="options"></div>
+      <div id="explanation-box" style="display:none"></div>
+      <button class="next-btn" id="next-btn" style="display:none" onclick="nextQuestion()"></button>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="result-score-big">
+      <div class="result-pct" id="result-pct"></div>
+      <div class="result-verdict" id="result-verdict"></div>
+      <div class="result-sub" id="result-sub"></div>
+    </div>
+    <div><div class="section-label">各類別成績</div><div id="cat-scores"></div></div>
+    <div class="advice-box" id="advice-box"></div>
+    <div class="result-actions">
+      <button class="restart-btn" onclick="restart()">重新練習（全部）</button>
+      <div class="cat-btns-grid" id="cat-btns-grid"></div>
+      <a href="index.html" style="display:block;text-align:center;padding:13px;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:16px;text-decoration:none;font-family:'JetBrains Mono',monospace;transition:color 0.15s,border-color 0.15s;" onmouseover="this.style.color='#ddddf0';this.style.borderColor='#f5a623'" onmouseout="this.style.color='';this.style.borderColor=''">← 返回首頁</a>
+    </div>
+  </div>
+
+  <footer>
+    <div>ISA 攀樹師筆試練習 · 每週三晚上八點測驗</div>
+    <div><a href="https://github.com/ismeterry-chiang/ISA-quiz" target="_blank">github.com/ismeterry-chiang/ISA-quiz</a></div>
+    <div style="margin-top:4px"><a href="index.html">← 返回首頁</a></div>
+  </footer>
+</div>
+
+<script>
+const COLORS = {
+  "安全":           { accent:"#e94560", light:"rgba(233,69,96,0.12)"   },
+  "樹木移除":       { accent:"#f5a623", light:"rgba(245,166,35,0.12)"  },
+  "攀爬與索具":     { accent:"#4ecca3", light:"rgba(78,204,163,0.12)"  },
+  "修剪":           { accent:"#a78bfa", light:"rgba(167,139,250,0.12)" },
+  "樹木健康與辨識": { accent:"#34d399", light:"rgba(52,211,153,0.12)"  },
+};
+const WEIGHTS = { "安全":"26%","樹木移除":"22%","攀爬與索具":"22%","修剪":"20%","樹木健康與辨識":"10%" };
+const CATEGORIES = ["全部","安全","樹木移除","攀爬與索具","修剪","樹木健康與辨識"];
+
+const ALL_QUESTIONS = [
+
+  // ══════════════ 安全 (7題) ══════════════
+  {
+    cat:"安全",
+    q:"依據 ANSI Z133，攀樹師進行有電力線的作業環境評估時，以下敘述何者正確？",
+    opts:[
+      "A. 攀樹師可自行目視判斷電力線是否有電，絕緣外皮完整即可安全作業",
+      "B. 任何電力線都應視為帶電（energized），除非電力公司確認斷電並上鎖",
+      "C. 低壓線路（110V/220V）不需特別處理，高壓線才需通報",
+      "D. 夜間施工時電力線通常無電，可降低警戒等級"
+    ],
+    ans:1,
+    exp:"ANSI Z133 的電力線安全原則：所有電力線一律視為帶電（assume all lines are energized）。原因：(1)絕緣外皮老化或破損不易目視判斷，(2)電力線斷電狀態可能隨時改變，(3)低壓線路仍可致命。唯一例外：電力公司已正式確認斷電、隔離並上鎖（lockout/tagout）。攀樹師沒有資格自行判斷電力線狀態。"
+  },
+  {
+    cat:"安全",
+    q:"「個人防護裝備（PPE）的層級概念」中，PPE 在危害控制層級中屬於？",
+    opts:[
+      "A. 第一優先：最有效的控制方式",
+      "B. 最後手段：在其他控制方式無法完全消除危害時補充使用",
+      "C. 只適用於化學危害，物理危害不適用",
+      "D. 與其他控制方式等效，可互相替代"
+    ],
+    ans:1,
+    exp:"危害控制層級（hierarchy of controls）由高到低：(1)消除（Elimination）、(2)替代（Substitution）、(3)工程控制（Engineering controls）、(4)行政控制（Administrative controls）、(5)PPE。PPE 是最後一道防線，因為它不消除危害本身，只保護使用者。樹木作業中許多危害無法完全消除（如高度、工具），因此 PPE 雖是最後手段，卻是不可缺少的必要補充。"
+  },
+  {
+    cat:"安全",
+    q:"攀樹師完成高空作業後，繩索和裝備「從樹上回收」時，地面人員應注意的最重要事項是？",
+    opts:[
+      "A. 快速回收以節省時間，效率優先",
+      "B. 確認繩索回收路徑淨空，人員不站在繩索或裝備可能墜落的正下方",
+      "C. 裝備回收不需要任何安全考量，只有攀爬時才有危險",
+      "D. 由最資深的人員單獨處理，其他人離開現場"
+    ],
+    ans:1,
+    exp:"裝備回收階段同樣存在危害：繩索抽出時可能帶動小樹枝或尚未固定的物件高速墜落；鈎環等金屬裝備若脫落，從15公尺高度下落的衝擊力足以致命。正確程序：確認回收繩索的拉動方向、路徑沿線人員淨空、站在側方而非正下方。ISA評分表特別提醒：「繩索和所有裝備在最後一次下降後都必須能夠從地面回收」——這意味著必須事前規劃好安全的回收方式。"
+  },
+  {
+    cat:"安全",
+    q:"攀樹作業中使用「手信號（hand signals）」的主要情境是？",
+    opts:[
+      "A. 攀爬者想炫耀技術時",
+      "B. 噪音、距離或防護裝備（如耳機）導致口頭溝通困難時的備用溝通方式",
+      "C. 口頭溝通效果完全相同，手信號只是傳統習慣",
+      "D. 手信號只用於夜間作業"
+    ],
+    ans:1,
+    exp:"作業現場常見溝通障礙：鏈鋸噪音（可達 110dB 以上）、強風、距離、耳罩使用等，均可能讓口頭 command-response 系統失效。手信號是標準的備用溝通方式，ISA 要求攀爬者確保警告信號「能夠被接收到，並在必要時採取行動」。作業前必須確認所有工作人員了解並一致使用相同的手信號。"
+  },
+  {
+    cat:"安全",
+    q:"關於「安全繩（safety lanyard）在 SRS 系統中」的使用，下列敘述何者正確？",
+    opts:[
+      "A. SRS 系統只有一條主繩，不需要額外的 safety lanyard",
+      "B. 攀爬至第一個固定點後才需要加裝 safety lanyard",
+      "C. 在當地法規要求或進行位置轉移時，應使用 safety lanyard 維持至少兩點固定",
+      "D. Safety lanyard 只在使用電動工具時才必要"
+    ],
+    ans:2,
+    exp:"Safety lanyard（工作定位安全短繩）在 SRS 系統中的作用：當攀爬者需要離開主繩系統、移動到側方作業位置、或進行需要雙手空開的工作時，lanyard 提供第二個固定點，確保「在任何時刻都不完全依賴單一固定點」。ISA 術科評分表要求在 handsaw 和 pole saw 工作站都必須有至少兩個接觸點（primary climbing rope + work positioning lanyard）。"
+  },
+  {
+    cat:"安全",
+    q:"作業現場發現地面有「空洞樹根（hollow root flare）」時，攀爬前的正確評估步驟是？",
+    opts:[
+      "A. 根部問題不影響攀爬，直接進行作業",
+      "B. 評估根系腐朽範圍對樹木整體穩定性的影響，決定是否繼續作業或調整作業方式",
+      "C. 在根部澆灌殺菌劑後即可安全攀爬",
+      "D. 通知地主，由地主決定是否繼續，樹藝師無評估責任"
+    ],
+    ans:1,
+    exp:"根系是樹木錨定土壤的基礎，根部腐朽直接影響樹木整體穩定性。空洞根系（hollow root flare）的潛在危險：攀爬者在樹上施加動態載荷時，可能引發樹木整體傾覆（uprooting）——這比枝條折斷更難預測且更致命。ISA 評分表明確要求攀爬前樹木和現場檢查必須包含「現場和根系的目視檢測」，且根系結構缺陷是必須評估的項目。"
+  },
+  {
+    cat:"安全",
+    q:"在繩索系統中，「dynamic rope（動態繩）」與「static rope（靜態繩）」的主要差異及適用場合是？",
+    opts:[
+      "A. 動態繩較粗，靜態繩較細，粗細決定用途",
+      "B. 動態繩可吸收墜落衝擊力（延伸性高），用於先鋒攀岩；靜態繩延伸性低，用於樹木攀爬和索具",
+      "C. 兩者功能完全相同，差異只在廠牌",
+      "D. 動態繩用於索具，靜態繩用於人員攀爬，恰好相反"
+    ],
+    ans:1,
+    exp:"動態繩（dynamic rope）：延伸性 8–40%，設計用於吸收先鋒攀岩的墜落衝擊力，延伸性高意味著緩慢制動、衝擊力小。靜態繩（static rope / low-stretch rope）：延伸性 ≤5%，用於樹木攀爬、索具和技術繩索救援。樹木攀爬使用靜態繩的原因：(1)攀爬時不希望繩索在體重下不斷延伸，(2)摩擦結需要穩定的繩子才能正常運作，(3)索具作業需要精確的力學控制。"
+  },
+
+  // ══════════════ 樹木移除 (5題) ══════════════
+  {
+    cat:"樹木移除",
+    q:"進行傾斜樹木（lean tree）的整棵移除時，以下哪個描述最正確？",
+    opts:[
+      "A. 傾斜樹木比直立樹木更容易控制，因為重力已決定倒向",
+      "B. 順傾（felling with the lean）最安全；逆傾（felling against the lean）需要使用楔子或牽引繩輔助控制",
+      "C. 傾斜樹木一律必須分段移除，不得整棵倒木",
+      "D. 傾斜角度在10度以內的樹木視為直立，無需特殊處理"
+    ],
+    ans:1,
+    exp:"傾斜樹木移除的核心考量：(1)順傾（with the lean）——最輕鬆，重力輔助，但落點必須有足夠空間；(2)橫傾（across the lean）——需要精確的鉸鏈設計，楔子輔助；(3)逆傾（against the lean）——最困難，必須使用楔子推開切口防止夾鋸，並加牽引繩（pulling rope）提供反向拉力，甚至使用繩索滑輪系統。重度逆傾（>15度）建議分段移除而非整棵倒木。"
+  },
+  {
+    cat:"樹木移除",
+    q:"「樹幹纖維（wood fiber）張力」在後切時影響切割方式的關鍵原因是？",
+    opts:[
+      "A. 張力使鏈鋸切割更省力，可加快作業速度",
+      "B. 受壓側木材切割時切口閉合（夾鋸），受拉側切割時切口開張；錯誤的切割順序會導致鋸子卡死或失控",
+      "C. 木材纖維張力只影響木材的燃燒特性",
+      "D. 後切方向無論如何都從樹木正後方水平切入"
+    ],
+    ans:1,
+    exp:"木材纖維應力（fiber stress）在切割時的影響：受壓側（compression side，切口會閉合）——從此側切入鋸子容易被夾住。受拉側（tension side，切口會開張）——從此側切入鋸子不被夾，但纖維可能提前撕裂。正確做法：識別樹木傾斜方向→確認受壓/受拉側→後切從受拉側開始（或使用插楔保持受壓側開張）→保留鉸鏈。忽略纖維張力是 barber chair 和夾鋸事故的主要原因。"
+  },
+  {
+    cat:"樹木移除",
+    q:"「重型索具（heavy rigging）」作業中，使用「摩擦裝置（friction device / port-a-wrap）」的目的是？",
+    opts:[
+      "A. 增加繩索與樹幹的摩擦力以固定繩索，完全靜止不動",
+      "B. 讓地面人員利用摩擦力控制材料緩慢下降，而非自由墜落",
+      "C. 防止繩索在滑輪中打結",
+      "D. 替代安全繩作為人員防護"
+    ],
+    ans:1,
+    exp:"Port-a-wrap（或 friction saver、rigging ring 搭配使用）是樹木索具作業的核心裝置：透過增加摩擦力，讓地面人員能以較小力量「制動」被切下的材料，控制其緩慢降落。若無摩擦裝置，切下的材料會以接近自由落體的速度下落，地面人員無法安全控制，衝擊力可能損壞設備、傷害人員或破壞地面結構。"
+  },
+  {
+    cat:"樹木移除",
+    q:"「空中重新固定（aerial re-tie）」技術是指？",
+    opts:[
+      "A. 在地面重新設置繩索後再攀爬",
+      "B. 攀爬者在樹上移動時更換主繩固定點（advance tie-in）的操作",
+      "C. 地面人員為攀爬者重新調整吊帶的程序",
+      "D. 緊急逃脫時快速解除所有繩索的方法"
+    ],
+    ans:1,
+    exp:"Aerial re-tie（空中繩索推進）：攀爬者在樹上將主繩固定點從第一個錨點推進至更高的第二錨點，以便繼續攀爬至更高位置。ISA 術科考試的 Section D（Rope Advancement）即測試此能力。關鍵：重新固定過程中必須始終維持安全保護（不得同時解除所有連結），且新繩索安裝在預設的更高固定點（12–15公尺），需要精準的投擲或技巧性的繩索操作。"
+  },
+  {
+    cat:"樹木移除",
+    q:"移除靠近建築物的樹木時，「牽引繩（pulling rope / tag line）」的標準操作方式是？",
+    opts:[
+      "A. 牽引繩只在樹木倒下後才連接，用於拉離建築物",
+      "B. 在後切開始前預先連接並拉緊，作業過程中持續保持適當張力引導倒向",
+      "C. 牽引繩與後切同時進行，讓重力和人力同步發揮",
+      "D. 牽引繩由一人徒手拉住即可，無需固定在設備上"
+    ],
+    ans:1,
+    exp:"牽引繩（pulling rope）正確使用：(1)在後切開始前架設好，連接於樹木中上部（通常 2/3 樹高處），(2)拉向安全落點方向，(3)後切進行中持續保持適當張力（不是拉倒，而是引導），(4)使用繩索滑輪系統（MA system）可讓地面人員安全施力，(5)若使用機械設備（如 come-along），必須注意不超過繩索或設備的 SWL。一人徒手拉住完全不安全——樹木開始倒下的瞬間產生的力遠超人力。"
+  },
+
+  // ══════════════ 攀爬與索具 (5題) ══════════════
+  {
+    cat:"攀爬與索具",
+    q:"ISA 術科考試中，「第一指定工作站（First Designated Workstation）」的核心評分重點是？",
+    opts:[
+      "A. 攀爬速度，越快到達得分越高",
+      "B. 在樹冠中進行垂直和水平移動時，維持兩點固定並控制鐘擺擺盪，以手鋸碰觸旗幟或鈴鐺",
+      "C. 評估固定點結構，向考官詳細口頭報告",
+      "D. 示範至少三種不同的摩擦結更換技巧"
+    ],
+    ans:1,
+    exp:"Section F（Handsaw Contact Station）評分重點：(1)全程維持至少兩個接觸點（主繩 + safety lanyard），(2)展示防止鐘擺擺盪的技巧（tie-in point 位於合適角度），(3)以手鋸（handsaw）實際碰觸考官設置的旗幟或鈴鐺（2分）。若出現不受控制的大幅擺盪，第一次警告，第二次直接 FAIL。「維持兩點固定」是作業過程中的持續要求，不只是靜止時。"
+  },
+  {
+    cat:"攀爬與索具",
+    q:"「Distel hitch」與「Prusik hitch」作為攀樹摩擦結時，最主要的差異是？",
+    opts:[
+      "A. 兩者完全相同，只是不同地區的稱呼",
+      "B. Distel 使用預製的繩環（sewn loop/eye-to-eye）而非繩頭，整體更緊湊且鎖定感更明確",
+      "C. Prusik 只能用於靜態繩，Distel 可用於動態繩",
+      "D. Distel 需要配合機械裝置，無法單獨作為摩擦結使用"
+    ],
+    ans:1,
+    exp:"Distel hitch：使用預製的扁帶或繩環（eye-to-eye cord），以特定纏繞方式製作，鎖定感明確且操作直覺，是歐洲樹藝界廣泛使用的摩擦結。Prusik hitch：使用兩端連接的繩環（prusik loop），纏繞方式不同，是登山和繩索救援的傳統摩擦結。兩者都在 ISA 認可的摩擦結清單中，但 Distel 在現代樹藝中更常見，因其更適合 MRS 系統中的流暢移動。"
+  },
+  {
+    cat:"攀爬與索具",
+    q:"使用「foot-locking 技術（腳夾繩上攀）」時，以下哪個動作最有效率且最省力？",
+    opts:[
+      "A. 雙腳用力夾繩，主要靠腿力推高身體",
+      "B. 先屈腿讓腳固定繩索，再用腿部伸展將身體推高，同時手部拉繩鎖定摩擦結",
+      "C. 主要靠手臂力量拉繩，腳只做輔助平衡",
+      "D. 腳夾繩後靜止不動，等待考官允許後再移動"
+    ],
+    ans:1,
+    exp:"Foot-locking（DdRT 系統常用技術）的動作原理：(1)屈腿，腳夾住兩股繩（腳踝交叉固定），(2)伸展腿部——用腿的力量將身體向上推，這是最大肌群，最省力，(3)同時手部向下推摩擦結或拉鎖定，確保上移後不滑落，(4)重複。腿部肌群（股四頭肌、臀肌）遠大於手臂，因此正確的 foot-locking 幾乎不依賴手臂力量，長時間攀爬不易疲勞。"
+  },
+  {
+    cat:"攀爬與索具",
+    q:"「Rigging sling（索具吊環）」選用時，以下哪個規格最需要確認？",
+    opts:[
+      "A. 顏色，不同顏色代表不同安全等級",
+      "B. 工作負荷極限（WLL / SWL）必須足以承受作業中的最大預期負載",
+      "C. 長度，越長越好以增加彈性",
+      "D. 材質僅限天然纖維，合成材質不適合樹木作業"
+    ],
+    ans:1,
+    exp:"Rigging sling 選用的核心：WLL（Working Load Limit / SWL）必須足夠。樹木作業中的預期負載遠超靜態重量——動態載荷（衝擊力）可能是靜態重量的 2–4 倍。此外需確認：(1)材質（polyester 對 UV 和化學品抵抗力較好；nylon 彈性大，不適合精確索具控制），(2)長度符合綁結需求，(3)每次使用前目視檢查有無切割、磨損、過熱跡象。顏色雖然是某些廠商的 WLL 識別碼，但不是通用標準。"
+  },
+  {
+    cat:"攀爬與索具",
+    q:"攀爬者在樹上需要「臨時固定（momentary anchor）」以釋放雙手作業時，最常用的快速固定方法是？",
+    opts:[
+      "A. 將主繩打死結（square knot）固定在枝條上",
+      "B. 以 safety lanyard 搭配鈎環固定在附近結構健全的枝條或樹幹上",
+      "C. 用手抓住繩索靜止不動，等待作業完成",
+      "D. 在樹幹上釘入臨時鐵釘作為固定點"
+    ],
+    ans:1,
+    exp:"Safety lanyard（工作定位安全短繩）是樹上臨時固定的標準方法：(1)快速且可調整（調整式 lanyard 或帶摩擦結的 lanyard），(2)在固定點確認後立即提供穩定工作位置，(3)釋放主繩系統的張力，讓攀爬者專注作業而非保持平衡，(4)作業完成後快速解除繼續移動。ISA 術科第一和第二工作站都要求使用 lanyard 維持兩點固定並防止擺盪。"
+  },
+
+  // ══════════════ 修剪 (5題) ══════════════
+  {
+    cat:"修剪",
+    q:"「清除修剪（cleaning pruning）」的定義與目標是？",
+    opts:[
+      "A. 移除所有小於 2 公分的細枝",
+      "B. 選擇性移除枯枝、病枝、交叉擦傷枝及弱枝，改善樹木健康與結構",
+      "C. 移除所有超出建築物外牆線的枝條",
+      "D. 將樹冠均勻修剪成圓形或方形"
+    ],
+    ans:1,
+    exp:"Cleaning pruning（清除修剪）是最基本的樹木維護修剪，目標：移除 4D——Dead（枯枝）、Diseased（病枝）、Damaged（受損枝）、Dangerous（危險枝），加上 Crossing/Rubbing（交叉擦傷枝）和 Weakly attached branches（弱連結枝）。好的清除修剪不改變樹冠大小或形狀，只改善健康狀況和降低危害風險。這也是 ANSI A300 最基本的修剪類型，幾乎適用於所有修剪情境。"
+  },
+  {
+    cat:"修剪",
+    q:"修剪時，「雙重切割技術（two-cut or three-cut technique）」用於大型枝條的原因是？",
+    opts:[
+      "A. 提高作業效率，一刀到底比較費時",
+      "B. 防止枝條在完全切斷前因自身重量撕裂樹皮（bark rip）造成大面積傷口",
+      "C. 符合特定工會規範的操作程序",
+      "D. 大型枝條一刀完成才是正確做法，多次切割不必要"
+    ],
+    ans:1,
+    exp:"大型枝條的三刀技術（three-cut technique）：(1)第一刀：在預計切除點外側約 30–40cm 處，從下方向上切入約枝條直徑的 1/3（undercut），防止枝條在主切割時向下撕裂，(2)第二刀：從上方完全切斷枝條，讓枝條乾淨落下而不撕裂，(3)第三刀：在 branch collar 外側完成最終的正確剪口。若跳過第一刀直接從上切，枝條自重可能在切斷前突然折斷並向下撕裂一大片樹皮，破壞 CODIT 防禦並開放大面積腐朽通道。"
+  },
+  {
+    cat:"修剪",
+    q:"「修剪周期（pruning cycle）」的選擇主要依據哪些因素？",
+    opts:[
+      "A. 固定每年一次，不受任何因素影響",
+      "B. 樹種生長速度、修剪目的、場地需求及預算，共同決定最適合的修剪週期",
+      "C. 只由地主決定，樹藝師無專業建議空間",
+      "D. 修剪週期越短越好，頻繁修剪對樹木最有利"
+    ],
+    ans:1,
+    exp:"修剪周期的決定因素：(1)樹種——快速生長樹種（如構樹、白千層）需要更頻繁的修剪；(2)修剪目的——危害樹枝清除可能每年或每季；視覺美觀可能 2–5 年；(3)場地需求——道路淨空有法規要求；(4)樹木健康狀況；(5)預算。過於頻繁的修剪會積累「修剪壓力」，使樹木長期處於恢復狀態；過長的間隔則可能讓問題枝條造成危害。專業判斷是關鍵。"
+  },
+  {
+    cat:"修剪",
+    q:"「結構性修剪（structural pruning）」最適合在樹木哪個生命階段進行，且最有效？",
+    opts:[
+      "A. 成熟大樹，因其結構已完全固定，效果最持久",
+      "B. 幼樹（young tree）階段，早期引導可以最小的傷口建立良好結構，效益最大",
+      "C. 只有移除死亡枝條才是結構修剪，與樹齡無關",
+      "D. 老齡樹木的結構修剪效益最高，延長使用壽命最明顯"
+    ],
+    ans:1,
+    exp:"結構性修剪（structural pruning）的最佳時機是幼樹階段。原因：(1)幼樹傷口小，CODIT 癒合快，(2)早期引導主幹、移除競爭性共生主幹（co-dominant stems），防止 included bark 形成，(3)建立良好的「骨架」後，後續維護需求大幅降低。成熟大樹的結構問題（如粗大的 included bark 連結）往往已無法完全矯正，只能管理風險。早期投入小，長期回報大。"
+  },
+  {
+    cat:"修剪",
+    q:"「修剪後傷口面積（wound surface area）」最小化的意義是？",
+    opts:[
+      "A. 小傷口外觀更美觀，只是美學考量",
+      "B. 傷口面積越小，CODIT 防禦越容易形成完整隔離，腐朽入侵範圍和機率越低",
+      "C. 傷口大小對樹木沒有影響，正確的消毒更重要",
+      "D. 大傷口反而有助於透氣，對樹木有益"
+    ],
+    ans:1,
+    exp:"傷口大小與樹木健康的直接關聯：CODIT 隔離的成功率和速度與傷口直徑成反比——小傷口（<5cm）通常能在 2–3 年內完全封閉；大傷口可能永遠無法完整封閉，讓腐朽持續擴散。這正是「縮剪在有足夠側枝處切除」和「三刀技術避免撕裂」的根本原因——都是為了最小化傷口面積，讓樹木的自然防禦發揮最大效果。"
+  },
+
+  // ══════════════ 樹木健康與辨識 (3題) ══════════════
+  {
+    cat:"樹木健康與辨識",
+    q:"「根系緊迫（root girdling / girdling root）」是指什麼現象，對樹木有何影響？",
+    opts:[
+      "A. 根系因土地太小無法擴展，需要更換種植地點",
+      "B. 部分根系環繞主幹生長，隨時間增粗後壓迫主幹，阻礙水分和養分的輸送，導致樹木逐漸衰弱",
+      "C. 一種正常的根系形態，對樹木無負面影響",
+      "D. 過度施肥導致根系快速膨大的現象"
+    ],
+    ans:1,
+    exp:"Girdling root（根系纏勒）：一條或多條根系以橫向或斜向纏繞主幹，隨著根系和主幹增粗，形成相互擠壓。危害：(1)壓迫木質部和韌皮部，阻礙水分、養分和光合作用產物的上下傳輸，(2)受壓部位容易成為腐朽入侵點，(3)嚴重時導致主幹基部局部死亡，整體衰弱，甚至增加樹木傾覆風險。常見於容器栽培或根系空間受限的都市樹木。"
+  },
+  {
+    cat:"樹木健康與辨識",
+    q:"「生長素（auxin）」在樹木修剪反應中扮演的角色是？",
+    opts:[
+      "A. 修剪後由根部分泌，促進傷口癒合",
+      "B. 由頂芽和生長中的枝條分泌，向下傳遞抑制側芽萌發；修剪移除分泌源後，側芽解除抑制大量萌發",
+      "C. 生長素與修剪反應無關，主要調控開花時間",
+      "D. 由土壤微生物分解有機物時產生，與樹體生長素不同"
+    ],
+    ans:1,
+    exp:"Auxin（生長素，主要是 indole-3-acetic acid / IAA）：由頂芽和活躍生長的枝條尖端分泌，沿極性方向向下傳遞，在側芽附近濃度高時抑制側芽萌發（頂端優勢）。修剪移除分泌源→auxin 濃度降低→側芽和潛伏芽（dormant buds）解除抑制→大量萌發徒長枝（water sprouts / epicormic growth）。這解釋了為何截頂後大量徒長枝爆發，也是修剪應盡量保留側枝、不輕易截頂的生理依據。"
+  },
+  {
+    cat:"樹木健康與辨識",
+    q:"評估樹木時，「維管束阻塞（vascular wilt）」類疾病（如荷蘭榆樹病 Dutch Elm Disease）的典型外部症狀是？",
+    opts:[
+      "A. 葉片出現圓形白色斑點，逐漸擴大",
+      "B. 枝條頂端葉片突然萎蔫、枯黃，且症狀沿枝條向下快速擴展（flagging）",
+      "C. 樹皮大面積剝落，露出白色木質部",
+      "D. 根部大量萌發小枝，樹冠同時停止生長"
+    ],
+    ans:1,
+    exp:"維管束阻塞病（vascular wilt diseases）：病原菌（真菌或細菌）侵入木質部（xylem），產生毒素或形成孢子堵塞維管束，阻礙水分向上輸送。典型症狀：(1)Flagging——枝梢葉片突然萎蔫，像旗子般垂下，(2)症狀沿枝條從上而下、由外向內擴展，(3)切開病枝可見木質部環狀或帶狀的深色變色（discoloration），是診斷的重要依據。荷蘭榆樹病（DED）、橡樹猝死病（Sudden Oak Death）都有類似模式。"
+  },
+];
+
+// ── State ──
+let filteredQ = [...ALL_QUESTIONS];
+let currentIdx = 0, answered = false, correct = 0, total = 0;
+let catScores = {}, selectedCat = "全部";
+
+buildFilters();
+renderQuestion();
+
+function buildFilters() {
+  const row = document.getElementById("filter-row");
+  row.innerHTML = "";
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.className = "cat-btn" + (cat === selectedCat ? " active" : "");
+    const c = COLORS[cat] || {};
+    if (cat === selectedCat && cat !== "全部") {
+      btn.style.background = c.accent; btn.style.color = "#07070f"; btn.style.borderColor = c.accent;
+    } else if (cat !== "全部") {
+      btn.style.color = c.accent; btn.style.borderColor = c.accent;
+    } else if (cat === selectedCat) {
+      btn.style.background = "#f5a623"; btn.style.color = "#07070f"; btn.style.borderColor = "#f5a623";
+    }
+    btn.textContent = cat === "全部" ? "全部" : `${cat} ${WEIGHTS[cat]}`;
+    btn.onclick = () => switchCategory(cat);
+    row.appendChild(btn);
+  });
+}
+
+function switchCategory(cat) {
+  selectedCat = cat;
+  filteredQ = cat === "全部" ? [...ALL_QUESTIONS] : ALL_QUESTIONS.filter(q => q.cat === cat);
+  currentIdx = 0; answered = false; correct = 0; total = 0; catScores = {};
+  document.getElementById("quiz").style.display = "block";
+  document.getElementById("results").style.display = "none";
+  updateScore(); buildFilters(); renderQuestion();
+}
+
+function renderQuestion() {
+  const q = filteredQ[currentIdx];
+  const c = COLORS[q.cat];
+  document.getElementById("progress-fill").style.width = ((currentIdx + (answered ? 1 : 0)) / filteredQ.length * 100) + "%";
+  document.getElementById("progress-fill").style.background = c.accent;
+  const tag = document.getElementById("cat-tag");
+  tag.textContent = q.cat; tag.style.color = c.accent; tag.style.borderColor = c.accent; tag.style.background = c.light;
+  document.getElementById("q-counter").textContent = `${currentIdx + 1} / ${filteredQ.length}`;
+  document.getElementById("question-text").textContent = q.q;
+  const opts = document.getElementById("options");
+  opts.innerHTML = "";
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement("button");
+    btn.className = "option-btn"; btn.textContent = opt; btn.onclick = () => selectAnswer(i);
+    opts.appendChild(btn);
+  });
+  document.getElementById("explanation-box").style.display = "none";
+  document.getElementById("next-btn").style.display = "none";
+  const card = document.getElementById("question-card");
+  card.style.animation = "none";
+  requestAnimationFrame(() => { card.style.animation = "fadeUp 0.3s ease both"; });
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  const q = filteredQ[currentIdx];
+  const c = COLORS[q.cat];
+  const isCorrect = idx === q.ans;
+  if (isCorrect) correct++;
+  total++;
+  if (!catScores[q.cat]) catScores[q.cat] = { correct: 0, total: 0 };
+  catScores[q.cat].total++;
+  if (isCorrect) catScores[q.cat].correct++;
+  document.querySelectorAll(".option-btn").forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.ans) { btn.className = "option-btn correct"; btn.innerHTML = `<span class="option-icon">✓</span><span>${q.opts[i]}</span>`; }
+    else if (i === idx && !isCorrect) { btn.className = "option-btn wrong"; btn.innerHTML = `<span class="option-icon">✗</span><span>${q.opts[i]}</span>`; }
+    else btn.className = "option-btn dimmed";
+  });
+  const exp = document.getElementById("explanation-box");
+  exp.style.display = "block";
+  exp.className = isCorrect ? "explanation" : "explanation wrong-exp";
+  exp.innerHTML = `<div class="exp-label" style="color:${isCorrect ? "var(--correct)" : "var(--wrong)"}">${isCorrect ? "✓ 正確" : "✗ 解析"}</div><div class="exp-text">${q.exp}</div>`;
+  const nb = document.getElementById("next-btn");
+  nb.style.display = "block"; nb.style.background = c.accent; nb.style.color = "#07070f";
+  nb.textContent = currentIdx < filteredQ.length - 1 ? "下一題 →" : "查看成績 →";
+  updateScore();
+  document.getElementById("progress-fill").style.width = ((currentIdx + 1) / filteredQ.length * 100) + "%";
+}
+
+function nextQuestion() {
+  if (currentIdx < filteredQ.length - 1) { currentIdx++; answered = false; renderQuestion(); }
+  else showResults();
+}
+
+function updateScore() {
+  document.getElementById("score-correct").textContent = correct;
+  document.getElementById("score-total").textContent = total;
+  document.getElementById("score-pct").textContent = total > 0 ? Math.round(correct / total * 100) + "%" : "—";
+}
+
+function showResults() {
+  document.getElementById("quiz").style.display = "none";
+  document.getElementById("results").style.display = "block";
+  const pct = Math.round(correct / total * 100), passed = pct >= 70;
+  const pe = document.getElementById("result-pct");
+  pe.textContent = pct + "%"; pe.style.color = passed ? "var(--correct)" : "var(--wrong)";
+  const ve = document.getElementById("result-verdict");
+  ve.textContent = passed ? "✓ 通過標準" : "✗ 繼續加強"; ve.style.color = pe.style.color;
+  document.getElementById("result-sub").textContent = `${correct} / ${total} 題正確`;
+  const cs = document.getElementById("cat-scores");
+  cs.innerHTML = "";
+  Object.entries(catScores).forEach(([cat, s]) => {
+    const p = Math.round(s.correct / s.total * 100), color = COLORS[cat].accent;
+    cs.innerHTML += `<div class="cat-score-row"><div class="cat-score-header"><span style="color:${color}">${cat} <span style="color:var(--muted);font-size:13px">(${WEIGHTS[cat]})</span></span><span style="font-family:'JetBrains Mono',monospace">${s.correct}/${s.total} — ${p}%</span></div><div class="cat-score-bar"><div class="cat-score-fill" style="width:${p}%;background:${color}"></div></div></div>`;
+  });
+  const adv = document.getElementById("advice-box");
+  const weak = Object.entries(catScores).filter(([, s]) => Math.round(s.correct / s.total * 100) < 70);
+  adv.innerHTML = `<div class="advice-title">💡 應考建議</div>`;
+  if (weak.length === 0) adv.innerHTML += `<div style="color:var(--correct)">✓ 全部類別達 70% 以上，繼續保持！下週五 6/27 筆試加油！</div>`;
+  else weak.forEach(([cat, s]) => { const p = Math.round(s.correct / s.total * 100); adv.innerHTML += `<div style="color:var(--wrong);margin-bottom:6px">⚠ ${cat}：${p}% — 建議本週複習相關章節，下週三再測驗</div>`; });
+  const grid = document.getElementById("cat-btns-grid");
+  grid.innerHTML = "";
+  Object.keys(catScores).forEach(cat => {
+    const color = COLORS[cat].accent;
+    const btn = document.createElement("button");
+    btn.className = "cat-retry-btn"; btn.style.color = color; btn.style.borderColor = color;
+    btn.textContent = `重練 ${cat}`; btn.onclick = () => switchCategory(cat);
+    grid.appendChild(btn);
+  });
+}
+function restart() { switchCategory("全部"); }
+</script>
+</body>
+</html>

@@ -105,10 +105,35 @@
   .question-card { animation: fadeUp 0.3s ease both; }
   @keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
   @keyframes fadeUp   { from { opacity:0; transform:translateY(10px);  } to { opacity:1; transform:translateY(0); } }
+
+  /* ── Back nav ── */
+  .back-nav {
+    padding: 14px 0 0;
+    margin-bottom: -8px;
+    animation: fadeDown 0.4s ease both;
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; color: var(--muted);
+    text-decoration: none;
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--surface);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .back-link:hover { color: var(--text); border-color: var(--climbing-accent, #4ecca3); }
+  .back-arrow { font-size: 13px; }
 </style>
 </head>
 <body>
 <div id="app">
+  <!-- Back to home -->
+  <div class="back-nav">
+    <a href="index.html" class="back-link"><span class="back-arrow">←</span> 返回首頁</a>
+  </div>
+
   <header>
     <div class="header-inner">
       <div>
@@ -157,7 +182,8 @@
     <div>ISA 攀樹師筆試練習 · 每週三晚上八點測驗</div>
     <div><a href="https://github.com/ismeterry-chiang/ISA-quiz" target="_blank">GitHub: ismeterry-chiang / ISA-quiz</a></div>
     <div style="margin-top:6px">依據 ISA Certified Tree Climber Program Guide · ANSI A300 · ANSI Z133</div>
-  </footer>
+      <div style="margin-top:6px"><a href="index.html" style="color:inherit;text-decoration:none;opacity:0.6">← 返回首頁</a></div>
+</footer>
 </div>
 
 <script>
